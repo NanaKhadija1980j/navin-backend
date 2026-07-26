@@ -2,7 +2,11 @@ import { AppError, ErrorCodes } from '../../shared/http/errors.js';
 import * as paymentsRepo from './payments.repo.js';
 import { PaymentStatus } from './payments.model.js';
 import type { IPayment } from './payments.model.js';
-import type { CreatePaymentInput, UpdatePaymentStatusInput } from './payments.validation.js';
+import type {
+  CreatePaymentInput,
+  UpdatePaymentStatusInput,
+  DisputeSettlementInput,
+} from './payments.validation.js';
 import { getStellarExplorerUrl } from '../../services/stellar.service.js';
 import { emitPaymentStatusChange } from '../../infra/socket/io.js';
 
@@ -20,11 +24,16 @@ function augmentPayment(payment: IPayment): IPayment & { explorerUrl?: string } 
  * @throws {AppError} When payment data is invalid or creation fails.
  */
 export async function createPaymentService(input: CreatePaymentInput & { organizationId: string }) {
+  // Accept both `token` and legacy `tokenType`
+  const token = input.token ?? (input.tokenType as string);
   const payment = await paymentsRepo.createPayment({
     shipmentId: input.shipmentId,
     organizationId: input.organizationId,
     amount: input.amount,
-    tokenType: input.tokenType,
+    token,
+    tokenType: token,
+    payerAddress: input.payerAddress,
+    payeeAddress: input.payeeAddress,
     status: input.status || PaymentStatus.PENDING,
   });
 
@@ -40,7 +49,7 @@ export async function createPaymentService(input: CreatePaymentInput & { organiz
 export async function getPaymentByIdService(id: string) {
   const payment = await paymentsRepo.getPaymentById(id);
   if (!payment) {
-    throw new AppError(404, 'Payment not found', ErrorCodes.PAYMENT_NOT_FOUND);
+    throw new AppError(404, 'Settlement not found', ErrorCodes.PAYMENT_NOT_FOUND);
   }
   return augmentPayment(payment);
 }
@@ -86,13 +95,13 @@ export async function getPaymentsService(input: {
 export async function updatePaymentStatusService(id: string, input: UpdatePaymentStatusInput) {
   const payment = await paymentsRepo.getPaymentById(id);
   if (!payment) {
-    throw new AppError(404, 'Payment not found', ErrorCodes.PAYMENT_NOT_FOUND);
+    throw new AppError(404, 'Settlement not found', ErrorCodes.PAYMENT_NOT_FOUND);
   }
 
   const oldStatus = payment.status;
   const updated = await paymentsRepo.updatePaymentStatus(id, input.status, input.stellarTxHash);
   if (!updated) {
-    throw new AppError(500, 'Failed to update payment status', 'PAYMENT_UPDATE_FAILED');
+    throw new AppError(500, 'Failed to update payment status', ErrorCodes.INTERNAL_ERROR);
   }
 
   emitPaymentStatusChange(updated.shipmentId.toString(), {
@@ -113,8 +122,7 @@ export async function updatePaymentStatusService(id: string, input: UpdatePaymen
  * @returns {Promise<unknown>} Payment record or null.
  */
 export async function getPaymentByShipmentService(shipmentId: string) {
-  const payment = await paymentsRepo.getPaymentByShipmentId(shipmentId);
-  return payment;
+  return paymentsRepo.getPaymentByShipmentId(shipmentId);
 }
 
 /**
@@ -128,4 +136,35 @@ export async function releasePaymentService(paymentId: string, stellarTxHash: st
     status: PaymentStatus.RELEASED,
     stellarTxHash,
   });
+}
+
+/**
+ * Transitions a settlement to DISPUTED status, recording dispute metadata.
+ * Only ADMIN/MANAGER should be permitted to call this (enforced at route level).
+ * @param {string} id - Settlement ObjectId.
+ * @param {DisputeSettlementInput} input - Dispute reason and optional notes.
+ * @returns {Promise<unknown>} Updated settlement document.
+ * @throws {AppError} 404 when settlement not found.
+ */
+export async function disputeSettlementService(id: string, input: DisputeSettlementInput) {
+  const payment = await paymentsRepo.getPaymentById(id);
+  if (!payment) {
+    throw new AppError(404, 'Settlement not found', ErrorCodes.PAYMENT_NOT_FOUND);
+  }
+
+  const updated = await paymentsRepo.disputePayment(id, input.reason, input.notes);
+  if (!updated) {
+    throw new AppError(500, 'Failed to dispute settlement', ErrorCodes.INTERNAL_ERROR);
+  }
+
+  emitPaymentStatusChange(updated.shipmentId.toString(), {
+    paymentId: updated._id.toString(),
+    shipmentId: updated.shipmentId.toString(),
+    oldStatus: payment.status,
+    newStatus: updated.status,
+    amount: updated.amount,
+    timestamp: new Date().toISOString(),
+  });
+
+  return augmentPayment(updated);
 }

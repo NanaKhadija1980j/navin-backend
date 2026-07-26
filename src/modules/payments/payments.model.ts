@@ -6,6 +6,16 @@ export enum PaymentStatus {
   ESCROWED = 'Escrowed',
   RELEASED = 'Released',
   FAILED = 'Failed',
+  DISPUTED = 'Disputed',
+}
+
+export interface IEscrowRelease {
+  conditionDescription?: string;
+  releasedAt?: Date;
+  releasedBy?: string;
+  disputedAt?: Date;
+  disputeReason?: string;
+  additionalNotes?: string;
 }
 
 export interface IPayment {
@@ -13,15 +23,32 @@ export interface IPayment {
   shipmentId: Types.ObjectId;
   organizationId: Types.ObjectId;
   amount: number;
+  /** @deprecated Use `token` instead. Kept for backward compatibility. */
   tokenType: string;
+  token: string;
+  payerAddress?: string;
+  payeeAddress?: string;
   status: PaymentStatus;
   stellarTxHash?: string;
+  escrowRelease?: IEscrowRelease;
   createdAt: Date;
   updatedAt: Date;
   deletedAt?: Date;
 }
 
-const PaymentSchema = new Schema(
+const EscrowReleaseSchema = new Schema<IEscrowRelease>(
+  {
+    conditionDescription: { type: String },
+    releasedAt: { type: Date },
+    releasedBy: { type: String },
+    disputedAt: { type: Date },
+    disputeReason: { type: String },
+    additionalNotes: { type: String },
+  },
+  { _id: false }
+);
+
+const PaymentSchema = new Schema<IPayment>(
   {
     shipmentId: {
       type: Schema.Types.ObjectId,
@@ -43,15 +70,23 @@ const PaymentSchema = new Schema(
     },
     tokenType: {
       type: String,
+      required: false,
+      enum: ['XLMN', 'USDC', 'Other'],
+    },
+    token: {
+      type: String,
       required: true,
       enum: ['XLMN', 'USDC', 'Other'],
     },
+    payerAddress: { type: String },
+    payeeAddress: { type: String },
     status: {
       type: String,
       enum: Object.values(PaymentStatus),
       default: PaymentStatus.PENDING,
     },
     stellarTxHash: { type: String },
+    escrowRelease: { type: EscrowReleaseSchema },
     deletedAt: { type: Date, default: null },
   },
   { timestamps: true }
