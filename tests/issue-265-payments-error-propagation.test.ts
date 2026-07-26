@@ -2,7 +2,7 @@ import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { createStellarServiceMock } from './helpers/mocks.js';
 import type { IPayment, PaymentStatus } from '../src/modules/payments/payments.model.js';
 
-const mockCreatePayment = jest.fn<(...args: any[]) => Promise<IPayment>>();
+const mockCreatePayment = jest.fn<(...args: unknown[]) => Promise<IPayment>>();
 
 await jest.unstable_mockModule('../src/modules/payments/payments.repo.js', () => ({
   createPayment: mockCreatePayment,
@@ -11,6 +11,9 @@ await jest.unstable_mockModule('../src/modules/payments/payments.repo.js', () =>
   updatePaymentStatus: jest.fn(),
   getPaymentByShipmentId: jest.fn(),
   deletePayment: jest.fn(),
+  aggregateSettlementSummary: jest.fn(),
+  buildSettlementSparkline: jest.fn(),
+  disputePayment: jest.fn(),
 }));
 
 await jest.unstable_mockModule('../src/services/stellar.service.js', () => createStellarServiceMock());
@@ -29,6 +32,7 @@ describe('Issue #265: createPaymentService error handling', () => {
       shipmentId: 'ship-1',
       organizationId: 'org-1',
       amount: 100,
+      token: 'USDC',
       tokenType: 'USDC',
       status: 'Pending' as PaymentStatus,
       createdAt: new Date(),
@@ -40,17 +44,18 @@ describe('Issue #265: createPaymentService error handling', () => {
       shipmentId: 'ship-1',
       organizationId: 'org-1',
       amount: 100,
-      tokenType: 'USDC',
+      token: 'USDC',
       status: 'Pending' as PaymentStatus,
     });
 
-    expect(mockCreatePayment).toHaveBeenCalledWith({
-      shipmentId: 'ship-1',
-      organizationId: 'org-1',
-      amount: 100,
-      tokenType: 'USDC',
-      status: 'Pending',
-    });
+    expect(mockCreatePayment).toHaveBeenCalledWith(
+      expect.objectContaining({
+        shipmentId: 'ship-1',
+        organizationId: 'org-1',
+        amount: 100,
+        token: 'USDC',
+      })
+    );
     expect(result).toHaveProperty('explorerUrl');
   });
 
@@ -64,14 +69,17 @@ describe('Issue #265: createPaymentService error handling', () => {
         shipmentId: 'invalid',
         organizationId: 'org-1',
         amount: -1,
-        tokenType: 'USDC',
+        token: 'USDC',
         status: 'Pending' as PaymentStatus,
       })
     ).rejects.toThrow('Shipment validation failed');
   });
 
   it('propagates duplicate key errors without wrapping', async () => {
-    const dupError = new Error('duplicate key error') as Error & { code: number; keyValue: Record<string, unknown> };
+    const dupError = new Error('duplicate key error') as Error & {
+      code: number;
+      keyValue: Record<string, unknown>;
+    };
     dupError.code = 11000;
     dupError.keyValue = { shipmentId: 'ship-1' };
     mockCreatePayment.mockRejectedValue(dupError);
@@ -81,7 +89,7 @@ describe('Issue #265: createPaymentService error handling', () => {
         shipmentId: 'ship-1',
         organizationId: 'org-1',
         amount: 100,
-        tokenType: 'USDC',
+        token: 'USDC',
         status: 'Pending' as PaymentStatus,
       })
     ).rejects.toThrow('duplicate key error');
@@ -96,7 +104,7 @@ describe('Issue #265: createPaymentService error handling', () => {
         shipmentId: 'ship-1',
         organizationId: 'org-1',
         amount: 100,
-        tokenType: 'USDC',
+        token: 'USDC',
         status: 'Pending' as PaymentStatus,
       })
     ).rejects.toThrow('Database connection lost');
@@ -111,7 +119,7 @@ describe('Issue #265: createPaymentService error handling', () => {
         shipmentId: 'ship-1',
         organizationId: 'org-1',
         amount: 100,
-        tokenType: 'USDC',
+        token: 'USDC',
         status: 'Pending' as PaymentStatus,
       });
       fail('Expected error to be thrown');

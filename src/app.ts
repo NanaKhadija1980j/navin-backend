@@ -8,7 +8,7 @@ import YAML from 'yamljs';
 import { requestId } from './shared/middleware/requestId.js';
 import { notFound } from './shared/middleware/notFound.js';
 import { errorMiddleware } from './shared/http/errorMiddleware.js';
-import { standardLimiter, loginLimiter } from './shared/middleware/rateLimiter.js';
+import { standardLimiter, loginLimiter, strictLimiter, otpLimiter } from './shared/middleware/rateLimiter.js';
 import { corsMiddleware, corsPreflight } from './config/cors.js';
 import { buildHelmetMiddleware } from './config/helmet.js';
 
@@ -53,6 +53,9 @@ export function buildApp() {
 
   app.use(standardLimiter);
   app.use('/api/auth/login', loginLimiter);
+  app.use('/api/auth/signup', strictLimiter);
+  app.use('/api/auth/forgot-password', otpLimiter);
+  app.use('/api/auth/reset-password', otpLimiter);
 
   app.use('/api/health', healthRouter);
   app.use('/api/auth', authRouter);
@@ -60,6 +63,7 @@ export function buildApp() {
   app.use('/api/organizations', organizationsRouter);
   app.use('/api/shipments', shipmentsRouter);
   app.use('/api/payments', paymentsRouter);
+  app.use('/api/settlements', paymentsRouter);
   app.use('/api/webhooks', webhooksRouter);
   app.use('/api/analytics', analyticsRouter);
   app.use('/api/anomalies', anomaliesRouter);
