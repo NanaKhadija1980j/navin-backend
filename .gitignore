@@ -5,8 +5,6 @@ node_modules/
 /dist/
 
 # local env files
-.env
-.env.*
 !.env.example
 
 # logs
@@ -34,7 +32,6 @@ coverage/
 .DS_Store
 
 # IDE
-.vscode/
 .idea/
 
 # TypeScript
@@ -42,6 +39,9 @@ coverage/
 
 .agent/
 issue.md
+
+# Redis persistence probe state (scripts/redis-persistence-probe.mjs)
+.redis-persistence-probe.json
 
 # Agent Skills & Prompts
 .agents/*
@@ -54,3 +54,4 @@ issue.md
 !.agents/skills/cross-check/**
 !.agents/skills/document/
 !.agents/skills/document/**
+config.bat
