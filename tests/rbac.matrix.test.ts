@@ -73,18 +73,18 @@ describe('RBAC Matrix Integration Tests', () => {
   let testUserIds: Record<Role, string>;
   let testOrganizationId: string;
   // Mock dependencies
-  const mockUserFind = jest.fn<any>();
-  const mockUserFindOne = jest.fn<any>();
-  const mockUserCreate = jest.fn<any>();
-  const mockUserFindById = jest.fn<any>();
-  const mockShipmentFind = jest.fn<any>();
-  const mockShipmentCreate = jest.fn<any>();
-  const mockShipmentFindByIdAndUpdate = jest.fn<any>();
-  const mockTelemetryFind = jest.fn<any>();
-  const mockAnomalyFind = jest.fn<any>();
-  const mockAnomalyFindByIdAndUpdate = jest.fn<any>();
-  const mockAnalyticsAggregate = jest.fn<any>();
-  const mockApiKeyFindOne = jest.fn<any>();
+  const mockUserFind = jest.fn();
+  const mockUserFindOne = jest.fn();
+  const mockUserCreate = jest.fn();
+  const mockUserFindById = jest.fn();
+  const mockShipmentFind = jest.fn();
+  const mockShipmentCreate = jest.fn();
+  const mockShipmentFindByIdAndUpdate = jest.fn();
+  const mockTelemetryFind = jest.fn();
+  const mockAnomalyFind = jest.fn();
+  const mockAnomalyFindByIdAndUpdate = jest.fn();
+  const mockAnalyticsAggregate = jest.fn();
+  const mockApiKeyFindOne = jest.fn();
 
   beforeAll(async () => {
     testOrganizationId = new mongoose.Types.ObjectId().toString();
@@ -98,28 +98,28 @@ describe('RBAC Matrix Integration Tests', () => {
 
     // Setup mocks
     await jest.unstable_mockModule('../src/infra/redis/tokenBlocklist.js', () => ({
-      isTokenBlocked: jest.fn<any>().mockResolvedValue(false),
-      blockToken: jest.fn<any>().mockResolvedValue(undefined),
+      isTokenBlocked: jest.fn().mockResolvedValue(false),
+      blockToken: jest.fn().mockResolvedValue(undefined),
     }));
 
     await jest.unstable_mockModule('../src/modules/telemetry/telemetry.service.js', () => ({
-      getTelemetryService: jest.fn<any>().mockResolvedValue({
+      getTelemetryService: jest.fn().mockResolvedValue({
         data: [],
         nextCursor: null,
         hasMore: false,
       }),
-      createTelemetryRecord: jest.fn<any>(),
-      findActiveShipmentBySensorId: jest.fn<any>(),
-      updateTelemetryAnchor: jest.fn<any>(),
-      markTelemetryAnchorFailed: jest.fn<any>(),
-      bulkIngestTelemetry: jest.fn<any>().mockResolvedValue([]),
+      createTelemetryRecord: jest.fn(),
+      findActiveShipmentBySensorId: jest.fn(),
+      updateTelemetryAnchor: jest.fn(),
+      markTelemetryAnchorFailed: jest.fn(),
+      bulkIngestTelemetry: jest.fn().mockResolvedValue([]),
       getTelemetryThresholds: jest
         .fn<any>()
         .mockReturnValue({ minBatteryLevel: 20, maxTemperature: 25, maxHumidity: 80 }),
     }));
 
     await jest.unstable_mockModule('../src/modules/anomaly/anomaly.service.js', () => ({
-      getAnomaliesService: jest.fn<any>().mockResolvedValue({
+      getAnomaliesService: jest.fn().mockResolvedValue({
         data: [],
         nextCursor: null,
         hasMore: false,
@@ -127,8 +127,8 @@ describe('RBAC Matrix Integration Tests', () => {
       resolveAnomalyService: jest
         .fn<any>()
         .mockResolvedValue({ _id: 'anomaly-1', status: 'RESOLVED' }),
-      detectAnomaly: jest.fn<any>().mockResolvedValue({ detected: false, anomalies: [] }),
-      getAnomalyStatsService: jest.fn<any>().mockResolvedValue({ total: 0, open: 0, resolved: 0 }),
+      detectAnomaly: jest.fn().mockResolvedValue({ detected: false, anomalies: [] }),
+      getAnomalyStatsService: jest.fn().mockResolvedValue({ total: 0, open: 0, resolved: 0 }),
     }));
 
     // ✅ Correct layout - top-level export matching shipments.service.ts
@@ -142,7 +142,7 @@ describe('RBAC Matrix Integration Tests', () => {
         maxSize: 5 * 1024 * 1024,
         maxPerShipment: 10,
       },
-      getShipmentsService: jest.fn<any>().mockResolvedValue({
+      getShipmentsService: jest.fn().mockResolvedValue({
         data: [],
         page: 1,
         limit: 20,
@@ -154,37 +154,37 @@ describe('RBAC Matrix Integration Tests', () => {
       getShipmentTimelineService: jest
         .fn<any>()
         .mockResolvedValue({ data: [], nextCursor: null, hasMore: false }),
-      createShipmentService: jest.fn<any>().mockResolvedValue({ _id: 'shipment-1' }),
+      createShipmentService: jest.fn().mockResolvedValue({ _id: 'shipment-1' }),
       patchShipmentService: jest
         .fn<any>()
         .mockResolvedValue({ _id: 'shipment-1', status: 'IN_TRANSIT' }),
       updateShipmentStatusService: jest
         .fn<any>()
         .mockResolvedValue({ _id: 'shipment-1', status: 'IN_TRANSIT' }),
-      uploadShipmentProofService: jest.fn<any>().mockResolvedValue({ _id: 'shipment-1' }),
-      uploadShipmentDocumentService: jest.fn<any>().mockResolvedValue({ url: 'http://mock/doc' }),
-      uploadShipmentPhotoService: jest.fn<any>().mockResolvedValue({ url: 'http://mock/photo' }),
+      uploadShipmentProofService: jest.fn().mockResolvedValue({ _id: 'shipment-1' }),
+      uploadShipmentDocumentService: jest.fn().mockResolvedValue({ url: 'http://mock/doc' }),
+      uploadShipmentPhotoService: jest.fn().mockResolvedValue({ url: 'http://mock/photo' }),
       createDisputeService: jest
         .fn<any>()
         .mockResolvedValue({ referenceNumber: 'DSP-000001', status: 'PENDING' }),
-      deleteShipmentService: jest.fn<any>().mockResolvedValue({ _id: 'shipment-1' }),
+      deleteShipmentService: jest.fn().mockResolvedValue({ _id: 'shipment-1' }),
       bulkUpdateShipmentStatusService: jest
         .fn<any>()
         .mockResolvedValue({ updated: 0, failed: [] }),
       getShipmentEtaService: jest
         .fn<any>()
         .mockResolvedValue({ estimatedArrival: null, reason: 'not in transit' }),
-      exportShipmentsService: jest.fn<any>().mockResolvedValue([]),
-      shipmentsToCSV: jest.fn<any>().mockReturnValue(''),
-      findShipments: jest.fn<any>().mockResolvedValue([]),
+      exportShipmentsService: jest.fn().mockResolvedValue([]),
+      shipmentsToCSV: jest.fn().mockReturnValue(''),
+      findShipments: jest.fn().mockResolvedValue([]),
     }));
 
 
     await jest.unstable_mockModule('../src/infra/redis/queue.js', () => ({
-      pushAlertJob: jest.fn<any>().mockResolvedValue(undefined),
-      pushStellarAnchorJob: jest.fn<any>().mockResolvedValue(undefined),
-      getTransactionQueue: jest.fn<any>(),
-      getRedisClient: jest.fn<any>(),
+      pushAlertJob: jest.fn().mockResolvedValue(undefined),
+      pushStellarAnchorJob: jest.fn().mockResolvedValue(undefined),
+      getTransactionQueue: jest.fn(),
+      getRedisClient: jest.fn(),
     }));
 
     await jest.unstable_mockModule('../src/infra/socket/io.js', () => ({
@@ -192,7 +192,6 @@ describe('RBAC Matrix Integration Tests', () => {
       emitPaymentStatusChange: jest.fn(),
       emitAnomalyDetected: jest.fn(),
       emitStatusUpdate: jest.fn(),
-      emitPaymentStatusChange: jest.fn(),
       initSocketIO: jest.fn(),
       getIO: jest.fn(),
       getActiveUsers: jest.fn().mockReturnValue(new Map()),
@@ -260,7 +259,7 @@ describe('RBAC Matrix Integration Tests', () => {
 
     await jest.unstable_mockModule('../src/modules/analytics/analytics.service.js', () => ({
       getAnalyticsPerformance: mockAnalyticsAggregate,
-      getAnalyticsSummary: jest.fn<any>().mockResolvedValue({
+      getAnalyticsSummary: jest.fn().mockResolvedValue({
         totalShipments: 0,
         onTimeRate: 0,
         avgTransitDays: 0,
@@ -270,27 +269,27 @@ describe('RBAC Matrix Integration Tests', () => {
     }));
 
     await jest.unstable_mockModule('../src/modules/users/users.service.js', () => ({
-      registerUser: jest.fn<any>().mockResolvedValue({
+      registerUser: jest.fn().mockResolvedValue({
         _id: 'user-new',
         email: 'newuser@test.com',
         name: 'New User',
       }),
-      createTeamMember: jest.fn<any>().mockResolvedValue({
+      createTeamMember: jest.fn().mockResolvedValue({
         _id: 'user-team',
         email: 'team@test.com',
         name: 'Team User',
       }),
-      listOrganizationUsers: jest.fn<any>().mockResolvedValue({
+      listOrganizationUsers: jest.fn().mockResolvedValue({
         data: [],
         total: 0,
         hasMore: false,
         nextCursor: null,
       }),
-      deleteUser: jest.fn<any>().mockResolvedValue({ _id: 'user-deleted' }),
-      generateInvitationLink: jest.fn<any>().mockResolvedValue({ token: 'invite-token' }),
-      verifyInvitationToken: jest.fn<any>().mockReturnValue({ email: 'invite@test.com' }),
-      acceptInvitation: jest.fn<any>().mockResolvedValue({ _id: 'user-accepted' }),
-      getCurrentUser: jest.fn<any>().mockResolvedValue({ _id: 'user-1', role: 'ADMIN' }),
+      deleteUser: jest.fn().mockResolvedValue({ _id: 'user-deleted' }),
+      generateInvitationLink: jest.fn().mockResolvedValue({ token: 'invite-token' }),
+      verifyInvitationToken: jest.fn().mockReturnValue({ email: 'invite@test.com' }),
+      acceptInvitation: jest.fn().mockResolvedValue({ _id: 'user-accepted' }),
+      getCurrentUser: jest.fn().mockResolvedValue({ _id: 'user-1', role: 'ADMIN' }),
     }));
 
     await jest.unstable_mockModule('../src/modules/webhooks/iot.service.js', () => ({
@@ -301,9 +300,9 @@ describe('RBAC Matrix Integration Tests', () => {
 
     await jest.unstable_mockModule('../src/modules/auth/apiKey.service.js', () => ({
       validateApiKey: mockApiKeyFindOne,
-      generateApiKey: jest.fn<any>(),
-      revokeApiKey: jest.fn<any>(),
-      listApiKeys: jest.fn<any>(),
+      generateApiKey: jest.fn(),
+      revokeApiKey: jest.fn(),
+      listApiKeys: jest.fn(),
     }));
 
     // Build the app
@@ -312,31 +311,31 @@ describe('RBAC Matrix Integration Tests', () => {
 
     // Setup default mock responses
     (mockUserFind as any).mockReturnValue({
-      limit: jest.fn<any>().mockResolvedValue([]),
-      skip: jest.fn<any>().mockResolvedValue([]),
-      sort: jest.fn<any>().mockReturnValue({
-        limit: jest.fn<any>().mockResolvedValue([]),
-        skip: jest.fn<any>().mockResolvedValue([]),
+      limit: jest.fn().mockResolvedValue([]),
+      skip: jest.fn().mockResolvedValue([]),
+      sort: jest.fn().mockReturnValue({
+        limit: jest.fn().mockResolvedValue([]),
+        skip: jest.fn().mockResolvedValue([]),
       }),
     });
 
     (mockShipmentFind as any).mockReturnValue({
-      limit: jest.fn<any>().mockResolvedValue([]),
-      skip: jest.fn<any>().mockResolvedValue([]),
-      sort: jest.fn<any>().mockReturnValue({
-        limit: jest.fn<any>().mockResolvedValue([]),
-        skip: jest.fn<any>().mockResolvedValue([]),
+      limit: jest.fn().mockResolvedValue([]),
+      skip: jest.fn().mockResolvedValue([]),
+      sort: jest.fn().mockReturnValue({
+        limit: jest.fn().mockResolvedValue([]),
+        skip: jest.fn().mockResolvedValue([]),
       }),
     });
 
     (mockTelemetryFind as any).mockReturnValue({
-      limit: jest.fn<any>().mockResolvedValue([]),
-      skip: jest.fn<any>().mockResolvedValue([]),
+      limit: jest.fn().mockResolvedValue([]),
+      skip: jest.fn().mockResolvedValue([]),
     });
 
     (mockAnomalyFind as any).mockReturnValue({
-      limit: jest.fn<any>().mockResolvedValue([]),
-      skip: jest.fn<any>().mockResolvedValue([]),
+      limit: jest.fn().mockResolvedValue([]),
+      skip: jest.fn().mockResolvedValue([]),
     });
 
     (mockAnalyticsAggregate as any).mockResolvedValue({
