@@ -27,8 +27,6 @@ The `MockStorageAdapter` generates synthetic public URLs using the standard sche
 https://mock-storage.local/{key}?mock=1&ts={timestamp}
 ```
 
-(Note: Legacy shim `src/services/mockStorageService.ts` used `https://mock-storage.com/...` and is deprecated; see below).
-
 ---
 
 ## StorageAdapter Contract Interface
@@ -76,13 +74,6 @@ All storage configuration variables are validated at runtime in `src/env.ts`:
 | `CLOUDINARY_CLOUD_NAME` | `z.string().min(1)` | `cloudinary` | Cloudinary account cloud name |
 | `CLOUDINARY_API_KEY` | `z.string().min(1)` | `cloudinary` | Cloudinary API key |
 | `CLOUDINARY_API_SECRET` | `z.string().min(1)` | `cloudinary` | Cloudinary API secret |
-
----
-
-## Deprecation Notice: Legacy `mockStorageService.ts`
-
-> [!WARNING]
-> `src/services/mockStorageService.ts` (`mockUploadToStorage`) is **deprecated** and unreferenced by active domain flows. All active upload flows (proofs, documents, photos, dispute evidence) consume `getStorageAdapter()` from `src/services/storage/index.ts`. Removal of `mockStorageService.ts` is tracked under task **P5-06**.
 
 ---
 

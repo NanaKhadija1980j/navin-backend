@@ -139,10 +139,6 @@ await jest.unstable_mockModule('../src/modules/users/users.model.js', () => ({
   },
 }));
 
-await jest.unstable_mockModule('../src/services/mockStorageService.js', () => ({
-  mockUploadToStorage: jest.fn(() => Promise.resolve('http://fake-url.com/file')),
-}));
-
 // Mock middleware dependencies
 await jest.unstable_mockModule('../src/shared/middleware/rateLimiter.js', () => ({
   standardLimiter: (_req: unknown, _res: unknown, next: () => void) => next(),
