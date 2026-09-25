@@ -10,36 +10,63 @@ The backend service powers the off-chain layer of the platform, handling API log
 > **Chain integration status:** shipment/telemetry hashes are anchored on-chain today via Horizon transactions. Soroban smart-contract integration (hash-and-emit events, escrow) is being co-designed with the [navin-contracts](https://github.com/Navin-xmr/navin-contracts) repo — settlement flows are currently simulated placeholders. See `TODO.md` Part 3.
 
 ---
-### Docker quickstart
 
-This is the shortest path to a complete local stack. It runs the API, MongoDB,
-Redis, and both Stellar workers on the Compose network.
 ## Table of Contents
 
-- [Quick Start](#quick-start)
+- [Docker Quickstart](#docker-quickstart)
 - [Authentication](#authentication)
 - [API Response Envelope](#api-response-envelope)
 - [Pagination](#pagination)
-# 2. Create the Compose environment file
 - [Scripts](#scripts)
-# Replace development secrets before using this stack outside a local machine.
+
 ---
-# 3. Build and start the production image and dependencies
+
+## Docker Quickstart
+
+This is the shortest path to a complete local stack. It runs the API, MongoDB,
+Redis, and both Stellar workers on the Compose network.
+
+**1. Clone the repository**
+
+```bash
+git clone https://github.com/Navin-xmr/navin-backend.git
+cd navin-backend
+```
+
+**2. Create the Compose environment file**
+
+```bash
+cp .env.example .env
+# Replace development secrets before using this stack outside a local machine.
+```
+
+On Windows PowerShell: `Copy-Item .env.example .env`
+
+**3. Build and start the production image and dependencies**
+
+```bash
 docker compose -f docker-compose.yml up -d --build
-Get the Navin Backend running in **less than 5 minutes**:
-# 4. Verify the services and API
+```
+
+This uses only `docker-compose.yml` (no override) so the stack runs the
+production image. The `-f docker-compose.yml` flag prevents Docker Compose
+from auto-merging `docker-compose.override.yml`.
+
+**4. Verify the services and API**
+
+```bash
 docker compose -f docker-compose.yml ps
 curl http://localhost:3000/api/health
 ```
-# 1. Clone the repository
+
+On Windows PowerShell: `curl.exe http://localhost:3000/api/health`
+
 The health request should return `success: true` and `data.status: "active"`.
+
 The Compose file reads `.env` when it exists. It supplies the internal
 container addresses for MongoDB and Redis, so `MONGO_URI` and `REDIS_URL` in
 `.env` do not need to be changed for this workflow. The API is available at
 `http://localhost:3000/api`.
-
-On Windows PowerShell, use `Copy-Item .env.example .env` for step 2 and
-`curl.exe http://localhost:3000/api/health` for step 4.
 
 ### Service topology
 
@@ -54,7 +81,7 @@ flowchart LR
     indexer --> redis
 ```
 
-`mongo` and `redis` are published on loopback for local inspection. The
+`mongo` and `redis` are published on loopback (`127.0.0.1`) for local inspection only. The
 workers publish no ports; they consume the same MongoDB and Redis services as
 the API. The API and workers wait for healthy MongoDB and Redis containers
 before starting.
