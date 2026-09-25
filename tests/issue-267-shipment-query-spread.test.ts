@@ -29,10 +29,6 @@ await jest.unstable_mockModule('../src/modules/telemetry/telemetry.model.js', ()
   Telemetry: { updateMany: jest.fn() },
 }));
 
-await jest.unstable_mockModule('../src/services/mockStorageService.js', () => ({
-  mockUploadToStorage: jest.fn(),
-}));
-
 await jest.unstable_mockModule('../src/modules/analytics/analytics.cache.js', () => ({
   invalidateAnalyticsPerformanceCache: jest.fn(),
 }));
