@@ -2,10 +2,16 @@ import { describe, expect, beforeAll, afterAll, it, jest } from '@jest/globals';
 import { io, Socket } from 'socket.io-client';
 import request from 'supertest';
 import { createServer, Server } from 'http';
-import jwt from 'jsonwebtoken';
+import { signToken } from './fixtures/factories.js';
 import { randomUUID } from 'crypto';
 import { generateDataHash } from '../src/shared/utils/crypto.js';
 import type { Application } from 'express';
+import {
+  flushUntilIdle,
+  joinShipmentRoom,
+  listenOnEphemeralPort,
+  waitForSocketEvent,
+} from './helpers/flush.js';
 
 type TelemetryCreateResult = {
   _id: string;
@@ -34,7 +40,7 @@ describe('Socket.io Client Integration Tests', () => {
   let app: Application;
   let httpServer: Server;
   let socketClient: Socket;
-  const TEST_PORT = 3999;
+  let testPort: number;
   const TEST_SHIPMENT_ID = '671000000000000000000001';
 
   const mockAnchorTelemetryHash = jest.fn<() => Promise<{ stellarTxHash: string }>>();
@@ -164,20 +170,12 @@ describe('Socket.io Client Integration Tests', () => {
     initSocketIO(httpServer);
 
     // Start the server
-    await new Promise<void>(resolve => {
-      httpServer.listen(TEST_PORT, () => {
-        console.log(`[Test Server] Running on port ${TEST_PORT}`);
-        resolve();
-      });
-    });
+    testPort = await listenOnEphemeralPort(httpServer);
 
     // Connect a real socket.io client
-    const socketToken = jwt.sign(
-      { userId: 'user123', role: 'ADMIN', organizationId: 'org456', jti: randomUUID() },
-      process.env.JWT_SECRET!
-    );
+    const socketToken = signToken({ userId: 'user123', role: 'ADMIN', organizationId: 'org456', jti: randomUUID() });
 
-    socketClient = io(`http://localhost:${TEST_PORT}`, {
+    socketClient = io(`http://localhost:${testPort}`, {
       transports: ['websocket'],
       forceNew: true,
       reconnection: false,
@@ -207,10 +205,7 @@ describe('Socket.io Client Integration Tests', () => {
   describe('HTTP-to-WebSocket Pipeline', () => {
     it('should receive telemetry_update event after joining shipment room and triggering webhook', async () => {
       // Step 1: Join the shipment room
-      socketClient.emit('join_shipment', TEST_SHIPMENT_ID);
-
-      // Wait for room join
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await joinShipmentRoom(socketClient, TEST_SHIPMENT_ID);
 
       // Step 2: Set up event listener for telemetry_update
       const telemetryUpdatePromise = new Promise<unknown>(resolve => {
@@ -279,8 +274,12 @@ describe('Socket.io Client Integration Tests', () => {
 
       await request(app).post('/api/webhooks/iot').set('x-api-key', 'valid-api-key').send(body);
 
-      // Wait a bit to ensure no event is received
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Let the webhook's async emit settle, then round-trip the socket so any
+      // room broadcast queued before it has been delivered.
+      await flushUntilIdle();
+      const left = waitForSocketEvent(socketClient, 'room_left');
+      socketClient.emit('leave_shipment', differentShipmentId);
+      await left;
 
       expect(eventReceived.received).toBe(false);
     }, 30_000);

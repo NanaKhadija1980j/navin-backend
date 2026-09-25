@@ -1,6 +1,6 @@
 import { jest, describe, beforeAll, beforeEach, it, expect } from '@jest/globals';
 import request from 'supertest';
-import jwt from 'jsonwebtoken';
+import { signToken } from './fixtures/factories.js';
 import type { Application } from 'express';
 
 // Mock in-memory DB for shipments
@@ -159,7 +159,7 @@ describe('Shipments Search Filters', () => {
 
   beforeAll(async () => {
     app = buildApp();
-    authToken = jwt.sign({ userId: 'test-user-id', role: 'ADMIN' }, process.env.JWT_SECRET!);
+    authToken = signToken({ userId: 'test-user-id', role: 'ADMIN' });
   });
 
   beforeEach(async () => {

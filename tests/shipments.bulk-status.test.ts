@@ -1,6 +1,6 @@
 import { jest, describe, beforeAll, beforeEach, it, expect } from '@jest/globals';
 import request from 'supertest';
-import jwt from 'jsonwebtoken';
+import { signToken } from './fixtures/factories.js';
 import process from 'process';
 import type { Application } from 'express';
 
@@ -154,7 +154,7 @@ describe('Bulk Status Update API', () => {
   });
 
   const generateToken = (payload: { userId?: string; role?: string; organizationId?: string }) =>
-    jwt.sign(payload, process.env.JWT_SECRET!);
+    signToken(payload);
 
   it('should return 401 when not authenticated', async () => {
     const res = await request(app)

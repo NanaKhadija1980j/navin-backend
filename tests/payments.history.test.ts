@@ -23,20 +23,8 @@ const { getPaymentsService, getPaymentByIdService } =
 const { getPaymentsController } = await import('../src/modules/payments/payments.controller.js');
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
-function makePayment(overrides: Record<string, unknown> = {}) {
-  return {
-    _id: '507f1f77bcf86cd799439011',
-    shipmentId: '507f1f77bcf86cd799439012',
-    organizationId: '507f1f77bcf86cd799439013',
-    amount: 100,
-    tokenType: 'USDC',
-    status: 'Pending',
-    stellarTxHash: undefined,
-    createdAt: new Date('2024-01-01T00:00:00Z'),
-    updatedAt: new Date('2024-01-01T00:00:00Z'),
-    ...overrides,
-  };
-}
+const { paymentDoc } = await import('./fixtures/factories.js');
+const makePayment = paymentDoc;
 
 function makePage(overrides: Record<string, unknown> = {}) {
   return {
@@ -62,6 +50,7 @@ function makeReqRes(query: Record<string, unknown> = {}, orgId = 'org-123') {
 }
 
 // ── Service tests ─────────────────────────────────────────────────────────────
+
 describe('getPaymentsService', () => {
   beforeEach(() => {
     getPaymentsByOrganizationMock.mockReset();
