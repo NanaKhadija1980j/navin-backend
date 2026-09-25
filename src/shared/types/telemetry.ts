@@ -2,6 +2,7 @@ export enum TelemetryAnchorStatus {
   PENDING_ANCHOR = 'PENDING_ANCHOR',
   ANCHORED = 'ANCHORED',
   ANCHOR_FAILED = 'ANCHOR_FAILED',
+  VERIFIED = 'VERIFIED',
 }
 
 /**
@@ -18,6 +19,15 @@ export const TELEMETRY_ANOMALY_TYPES = [
 ] as const;
 
 export type TelemetryAnomalyType = (typeof TELEMETRY_ANOMALY_TYPES)[number];
+
+export interface ITelemetryConfirmationMetadata {
+  blockNumber?: number;
+  ledger?: number;
+  confirmations?: number;
+  verified?: boolean;
+  memo?: string;
+  indexedAt?: string;
+}
 
 export interface ITelemetry {
   _id: string;
@@ -39,6 +49,11 @@ export interface ITelemetry {
   shockMagnitude?: number; // Acceleration magnitude (G-force units)
   isAnomaly?: boolean; // True if any anomaly detected on this record
   anomalyType?: TelemetryAnomalyType; // Primary anomaly type (if isAnomaly=true)
+
+  // Confirmation tracking
+  verified?: boolean;
+  confirmationMetadata?: ITelemetryConfirmationMetadata;
+  metadata?: Record<string, unknown>;
 
   createdAt: Date;
   updatedAt: Date;

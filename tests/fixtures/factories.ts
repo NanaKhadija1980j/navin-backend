@@ -23,12 +23,14 @@ import { UserRole } from '../../src/shared/constants/index.js';
 import { ShipmentStatus } from '../../src/shared/types/shipment.js';
 import { PaymentStatus } from '../../src/modules/payments/payments.model.js';
 import { InvitationStatus } from '../../src/modules/invitations/invitations.model.js';
+import { TelemetryAnchorStatus } from '../../src/shared/types/telemetry.js';
 import type { IUser } from '../../src/shared/types/user.js';
 import type { IOrganization } from '../../src/shared/types/user.js';
 import type { IShipment } from '../../src/shared/types/shipment.js';
 import type { IPayment } from '../../src/modules/payments/payments.model.js';
 import type { IInvitation } from '../../src/modules/invitations/invitations.model.js';
 import type { ILedgerBlock } from '../../src/modules/ledger/ledger.model.js';
+import type { ITelemetry } from '../../src/shared/types/telemetry.js';
 
 // ---------------------------------------------------------------------------
 // Users
@@ -171,6 +173,30 @@ export function createMockLedgerBlock(overrides: Partial<ILedgerBlock> = {}): IL
 }
 
 // ---------------------------------------------------------------------------
+// Telemetry
+// ---------------------------------------------------------------------------
+
+export function createMockTelemetry(overrides: Partial<ITelemetry> = {}): ITelemetry {
+  const id = new Types.ObjectId().toString();
+  const now = new Date();
+  return {
+    _id: id,
+    sensorId: `sensor-${id.slice(-6)}`,
+    shipmentId: new Types.ObjectId().toString(),
+    temperature: 20.5,
+    humidity: 50,
+    latitude: 6.5244,
+    longitude: 3.3792,
+    batteryLevel: 95,
+    timestamp: now,
+    dataHash: 'test-data-hash',
+    stellarTxHash: `tx-${id.slice(-8)}`,
+    anchorStatus: TelemetryAnchorStatus.ANCHORED,
+    rawPayload: {},
+    verified: false,
+    confirmationMetadata: undefined,
+    createdAt: now,
+    updatedAt: now,
 // Auth tokens
 // ---------------------------------------------------------------------------
 

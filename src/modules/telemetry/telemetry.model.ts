@@ -29,6 +29,9 @@ const TelemetrySchema = new Schema(
       default: TelemetryAnchorStatus.PENDING_ANCHOR,
     },
     anchorError: { type: String },
+    verified: { type: Boolean, default: false },
+    confirmationMetadata: { type: Schema.Types.Mixed },
+    metadata: { type: Schema.Types.Mixed },
 
     // New fields for frontend anomaly alignment
     shockMagnitude: { type: Number, min: 0 },
@@ -54,6 +57,8 @@ TelemetrySchema.index({ shipmentId: 1, timestamp: -1 });
 // Optimizes checking/filtering telemetry data for a specific sensor tracking a specific shipment, sorted by timestamp descending.
 TelemetrySchema.index({ sensorId: 1, shipmentId: 1, timestamp: -1 });
 TelemetrySchema.index({ anchorStatus: 1 });
+TelemetrySchema.index({ stellarTxHash: 1 });
+TelemetrySchema.index({ verified: 1 });
 
 // New indexes for anomaly filtering
 TelemetrySchema.index({ isAnomaly: 1, timestamp: -1 });
@@ -69,4 +74,5 @@ TelemetrySchema.pre('aggregate', function () {
 });
 
 export const Telemetry = model<ITelemetry>('Telemetry', TelemetrySchema);
+export const TelemetryModel = Telemetry;
 export { TelemetryAnchorStatus };
