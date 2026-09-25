@@ -18,8 +18,12 @@ await jest.unstable_mockModule('../src/services/email.service.js', () => ({
 await jest.unstable_mockModule('../src/modules/users/users.model.js', () => {
   const UserModel = {
     findById: (id: string) => Promise.resolve(users.find(u => u._id === id)),
-    findOne: ({ email }: { email: string }) =>
-      Promise.resolve(users.find(u => u.email === email) ?? null),
+    findOne: ({ email }: { email: string }) => {
+      const match = users.find(u => u.email === email) ?? null;
+      const query = Promise.resolve(match);
+      (query as any).lean = () => Promise.resolve(match);
+      return query;
+    },
     create: jest.fn().mockImplementation(async (data) => {
       const created = {
         _id: `user-${Date.now()}`,
