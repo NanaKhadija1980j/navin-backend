@@ -1,6 +1,6 @@
 import { describe, expect, beforeEach, it, jest } from '@jest/globals';
 import request from 'supertest';
-import jwt from 'jsonwebtoken';
+import { signToken } from './fixtures/factories.js';
 import type { Application } from 'express';
 
 type UserRecord = { _id: string; email: string; organizationId: string; role: string };
@@ -75,10 +75,7 @@ describe('GET /api/users', () => {
   });
 
   it('returns users for the authenticated organization with default limit', async () => {
-    const token = jwt.sign(
-      { userId: 'actor-1', role: 'ADMIN', organizationId: 'org-a' },
-      process.env.JWT_SECRET!
-    );
+    const token = signToken({ userId: 'actor-1', role: 'ADMIN', organizationId: 'org-a' });
 
     const res = await request(app).get('/api/users').set('Authorization', `Bearer ${token}`);
 
@@ -94,10 +91,7 @@ describe('GET /api/users', () => {
   });
 
   it('returns paginated results without duplicates across pages', async () => {
-    const token = jwt.sign(
-      { userId: 'actor-1', role: 'ADMIN', organizationId: 'org-a' },
-      process.env.JWT_SECRET!
-    );
+    const token = signToken({ userId: 'actor-1', role: 'ADMIN', organizationId: 'org-a' });
 
     const page1 = await request(app)
       .get('/api/users')
@@ -125,10 +119,7 @@ describe('GET /api/users', () => {
   });
 
   it('enforces maximum limit of 100', async () => {
-    const token = jwt.sign(
-      { userId: 'actor-1', role: 'ADMIN', organizationId: 'org-a' },
-      process.env.JWT_SECRET!
-    );
+    const token = signToken({ userId: 'actor-1', role: 'ADMIN', organizationId: 'org-a' });
 
     const res = await request(app)
       .get('/api/users')
@@ -141,10 +132,7 @@ describe('GET /api/users', () => {
   });
 
   it('returns 403 for unauthorized roles', async () => {
-    const token = jwt.sign(
-      { userId: 'viewer-1', role: 'VIEWER', organizationId: 'org-a' },
-      process.env.JWT_SECRET!
-    );
+    const token = signToken({ userId: 'viewer-1', role: 'VIEWER', organizationId: 'org-a' });
 
     const res = await request(app).get('/api/users').set('Authorization', `Bearer ${token}`);
 
@@ -153,7 +141,7 @@ describe('GET /api/users', () => {
   });
 
   it('returns 403 when organization context is missing', async () => {
-    const token = jwt.sign({ userId: 'admin-1', role: 'ADMIN' }, process.env.JWT_SECRET!);
+    const token = signToken({ userId: 'admin-1', role: 'ADMIN' });
 
     const res = await request(app).get('/api/users').set('Authorization', `Bearer ${token}`);
 
@@ -162,10 +150,7 @@ describe('GET /api/users', () => {
   });
 
   it('returns 400 when unknown query parameters are provided', async () => {
-    const token = jwt.sign(
-      { userId: 'actor-1', role: 'ADMIN', organizationId: 'org-a' },
-      process.env.JWT_SECRET!
-    );
+    const token = signToken({ userId: 'actor-1', role: 'ADMIN', organizationId: 'org-a' });
 
     const res = await request(app)
       .get('/api/users')

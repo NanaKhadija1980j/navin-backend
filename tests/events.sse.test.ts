@@ -1,18 +1,25 @@
-import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
-import jwt from 'jsonwebtoken';
+import { describe, it, expect, beforeEach, afterEach, afterAll, jest } from '@jest/globals';
 import request from 'supertest';
 import type { Request, Response, NextFunction } from 'express';
 import { EventEmitter } from 'events';
-import { buildApp } from '../src/app.js';
-import {
-  deliverToUserForTest,
-  getSseClientCount,
-  registerSseClient,
-  resetSseHubForTest,
-} from '../src/infra/sse/sseHub.js';
 import type { RealtimeEvent } from '../src/shared/types/realtimeEvents.js';
+import { redisMock, signToken as signJwt } from './fixtures/factories.js';
 
-const JWT_SECRET = 'test-jwt-secret-key-at-least-32-chars-long!';
+// Mock lifecycle (#626): resetModules → unstable_mockModule → dynamic import.
+// The in-memory Redis mock must be registered before anything imports
+// tokenBlocklist, and must never be wiped by a later resetModules().
+const redisStore = new Map<string, string>();
+jest.resetModules();
+await jest.unstable_mockModule('../src/infra/redis/connection.js', () => redisMock(redisStore));
+
+const { buildApp } = await import('../src/app.js');
+const { blockToken } = await import('../src/infra/redis/tokenBlocklist.js');
+const { requireSseAuth } = await import('../src/shared/middleware/requireSseAuth.js');
+const { deliverToUserForTest, getSseClientCount, registerSseClient, resetSseHubForTest } =
+  await import('../src/infra/sse/sseHub.js');
+
+const VALID_JTI = '550e8400-e29b-41d4-a716-446655440000';
+const REVOKED_JTI = '6f1c2b3a-4d5e-4f60-8a7b-9c0d1e2f3a4b';
 
 function createMockResponse(): Response & EventEmitter {
   const emitter = new EventEmitter();
@@ -37,15 +44,8 @@ function createMockResponse(): Response & EventEmitter {
 }
 
 function signToken(overrides: Record<string, unknown> = {}): string {
-  return jwt.sign(
-    {
-      userId: 'user-123',
-      role: 'ADMIN',
-      organizationId: 'org-456',
-      jti: '550e8400-e29b-41d4-a716-446655440000',
-      ...overrides,
-    },
-    JWT_SECRET,
+  return signJwt(
+    { userId: 'user-123', role: 'ADMIN', organizationId: 'org-456', jti: VALID_JTI, ...overrides },
     { expiresIn: '1h' }
   );
 }
@@ -54,10 +54,17 @@ describe('GET /api/events — SSE endpoint', () => {
   const app = buildApp();
 
   beforeEach(() => {
+    redisStore.clear();
     resetSseHubForTest();
   });
 
   afterEach(() => {
+    jest.useRealTimers();
+    resetSseHubForTest();
+  });
+
+  afterAll(() => {
+    redisStore.clear();
     resetSseHubForTest();
   });
 
@@ -78,26 +85,9 @@ describe('GET /api/events — SSE endpoint', () => {
     });
 
     it('returns 401 when token is revoked', async () => {
-      const store = new Map<string, string>();
-      await jest.unstable_mockModule('../src/infra/redis/connection.js', () => ({
-        getRedisClient: () => ({
-          get: async (key: string) => store.get(key) ?? null,
-          set: async (key: string, value: string) => {
-            store.set(key, value);
-            return 'OK';
-          },
-        }),
-        getRedisConnection: () => ({
-          get: async (key: string) => store.get(key) ?? null,
-        }),
-        disconnectRedis: jest.fn(),
-      }));
+      await blockToken(REVOKED_JTI, 3600);
 
-      jest.resetModules();
-      const { blockToken } = await import('../src/infra/redis/tokenBlocklist.js');
-      await blockToken('550e8400-e29b-41d4-a716-446655440000', 3600);
-
-      const token = signToken();
+      const token = signToken({ jti: REVOKED_JTI });
       const res = await request(app)
         .get('/api/events')
         .set('Authorization', `Bearer ${token}`);
@@ -107,7 +97,6 @@ describe('GET /api/events — SSE endpoint', () => {
     });
 
     it('accepts JWT via Authorization header', async () => {
-      const { requireSseAuth } = await import('../src/shared/middleware/requireSseAuth.js');
       const token = signToken();
       const req = {
         headers: { authorization: `Bearer ${token}` },
@@ -122,7 +111,6 @@ describe('GET /api/events — SSE endpoint', () => {
     });
 
     it('accepts JWT via ?token= query parameter', async () => {
-      const { requireSseAuth } = await import('../src/shared/middleware/requireSseAuth.js');
       const token = signToken();
       const req = {
         headers: {},
@@ -182,8 +170,6 @@ describe('GET /api/events — SSE endpoint', () => {
 
       expect(res.chunks.length).toBeGreaterThan(initialChunks);
       expect(res.chunks.at(-1)).toBe(': heartbeat\n\n');
-
-      jest.useRealTimers();
     });
 
     it('removes client on close', () => {

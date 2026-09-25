@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
+import { flushUntilIdle } from './helpers/flush.js';
 
 describe('processIotWebhook', () => {
   const payload = {

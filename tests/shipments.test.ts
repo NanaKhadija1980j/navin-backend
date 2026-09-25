@@ -1,6 +1,6 @@
 import { jest, describe, beforeAll, beforeEach, it, expect } from '@jest/globals';
 import request from 'supertest';
-import jwt from 'jsonwebtoken';
+import { signToken } from './fixtures/factories.js';
 import process from 'process';
 import type { Application } from 'express';
 
@@ -202,7 +202,7 @@ describe('Shipments API (mocked DB)', () => {
     const appModule = await import('../src/app.js');
     buildApp = appModule.buildApp as () => Application;
     app = buildApp();
-    authToken = jwt.sign({ userId: 'test-user-id', role: 'MANAGER' }, process.env.JWT_SECRET!);
+    authToken = signToken({ userId: 'test-user-id', role: 'MANAGER' });
   });
 
   beforeEach(async () => {

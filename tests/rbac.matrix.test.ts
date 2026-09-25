@@ -1,6 +1,6 @@
 import { describe, expect, beforeAll, afterAll, it, jest } from '@jest/globals';
 import request from 'supertest';
-import jwt from 'jsonwebtoken';
+import { signToken } from './fixtures/factories.js';
 import { randomUUID } from 'crypto';
 import mongoose from 'mongoose';
 import type { Application } from 'express';
@@ -362,7 +362,7 @@ describe('RBAC Matrix Integration Tests', () => {
       organizationId: testOrganizationId,
       jti: randomUUID(),
     };
-    return jwt.sign(payload, env.JWT_SECRET, { expiresIn: '1h' });
+    return signToken(payload, { expiresIn: '1h' });
   }
 
   describe('Role-Based Access Control Matrix', () => {

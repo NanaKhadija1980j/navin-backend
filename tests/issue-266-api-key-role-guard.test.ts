@@ -1,17 +1,14 @@
 import { describe, it, expect, jest, beforeAll } from '@jest/globals';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
+import { signToken } from './fixtures/factories.js';
 import { randomUUID } from 'crypto';
 import type { Application } from 'express';
 
 const JWT_SECRET = 'test-jwt-secret-key-at-least-32-chars-long!';
 
 function makeToken(role: string) {
-  return jwt.sign(
-    { userId: 'user-1', email: 'test@test.com', role, organizationId: 'org-1', jti: randomUUID() },
-    JWT_SECRET,
-    { expiresIn: '1h' }
-  );
+  return signToken({ userId: 'user-1', email: 'test@test.com', role, organizationId: 'org-1', jti: randomUUID() }, { expiresIn: '1h' });
 }
 
 await jest.unstable_mockModule('../src/modules/auth/apiKey.service.js', () => ({

@@ -1,6 +1,6 @@
 import { describe, expect, beforeEach, it, jest } from '@jest/globals';
 import request from 'supertest';
-import jwt from 'jsonwebtoken';
+import { signToken } from './fixtures/factories.js';
 import type { Application } from 'express';
 
 describe('GET /api/analytics/performance', () => {
@@ -155,8 +155,7 @@ describe('GET /api/analytics/performance', () => {
   });
 
   it('calculates shipments-by-status, average delivery time, and total delayed shipments', async () => {
-    const { JWT_SECRET } = process.env;
-    const token = jwt.sign({ userId: 'u1', role: 'ADMIN' }, JWT_SECRET!);
+    const token = signToken({ userId: 'u1', role: 'ADMIN' });
 
     const res = await request(app)
       .get('/api/analytics/performance')
@@ -191,8 +190,7 @@ describe('GET /api/analytics/performance', () => {
   });
 
   it('returns 403 when role is not ADMIN or MANAGER', async () => {
-    const { JWT_SECRET } = process.env;
-    const token = jwt.sign({ userId: 'u1', role: 'VIEWER' }, JWT_SECRET!);
+    const token = signToken({ userId: 'u1', role: 'VIEWER' });
 
     const res = await request(app)
       .get('/api/analytics/performance')
@@ -255,8 +253,7 @@ describe('GET /api/analytics/performance', () => {
     let adminToken: string;
 
     beforeEach(() => {
-      const { JWT_SECRET } = process.env;
-      adminToken = jwt.sign({ userId: 'u1', role: 'ADMIN' }, JWT_SECRET!);
+      adminToken = signToken({ userId: 'u1', role: 'ADMIN' });
     });
 
     it('accepts dates with Z suffix (UTC)', async () => {
