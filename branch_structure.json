@@ -1,0 +1,33 @@
+{
+  "default_branch": "main",
+  "branches": [
+    "docs/api-documentation-and-swagger-improvements",
+    "fix/621-testing-expand-shipments-service-mock-surface-to-full-controller-import-list",
+    "fix/625-testing-point-storage-mock-at-services-storage-upload-js-specifier-actually-imported",
+    "fix/635-swagger-resolve-remaining-openapi-schema-composition-warnings",
+    "fix/637-docker-verify-redis-queue-persistence-across-container-restarts",
+    "fix/merge-truncated-factories-fixture",
+    "main",
+    "origin"
+  ],
+  "parent": {
+    "docs/api-documentation-and-swagger-improvements": "main",
+    "fix/621-testing-expand-shipments-service-mock-surface-to-full-controller-import-list": "main",
+    "fix/625-testing-point-storage-mock-at-services-storage-upload-js-specifier-actually-imported": "main",
+    "fix/635-swagger-resolve-remaining-openapi-schema-composition-warnings": "main",
+    "fix/637-docker-verify-redis-queue-persistence-across-container-restarts": "main",
+    "fix/merge-truncated-factories-fixture": "main",
+    "main": null,
+    "origin": "main"
+  },
+  "order": [
+    "main",
+    "docs/api-documentation-and-swagger-improvements",
+    "fix/621-testing-expand-shipments-service-mock-surface-to-full-controller-import-list",
+    "fix/625-testing-point-storage-mock-at-services-storage-upload-js-specifier-actually-imported",
+    "fix/635-swagger-resolve-remaining-openapi-schema-composition-warnings",
+    "fix/637-docker-verify-redis-queue-persistence-across-container-restarts",
+    "fix/merge-truncated-factories-fixture",
+    "origin"
+  ]
+}
