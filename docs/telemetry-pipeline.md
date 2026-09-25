@@ -137,11 +137,6 @@ DEFAULT_TELEMETRY_THRESHOLDS = {
 (`getOrgTelemetryThresholdsService` in `telemetryThreshold.service.ts`) and returns
 `{ shipmentType, thresholds }` with the effective org/shipment-type values.
 
-> Dead code note: the hardcoded `getTelemetryThresholds()` in `telemetry.service.ts`
-> (`{ maxTemp: 85, maxHumidity: 90, minBatteryLevel: 20 }`) has zero callers and is unrelated to
-> the endpoint above. Flagged for removal under P5-05 — do not treat 85/90 as the operational
-> alert ceiling; live detection uses the **25 / 80 / 20** defaults plus org overrides.
-
 ## Payload shapes (summary)
 
 ### `POST /api/webhooks/iot` (union)

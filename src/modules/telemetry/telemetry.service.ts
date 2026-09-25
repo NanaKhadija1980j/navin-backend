@@ -10,7 +10,7 @@ import type {
   TelemetryUpdatePayload,
 } from '../../shared/types/socketEvents.js';
 import { invalidateShipmentEtaCache } from '../shipments/shipmentsEta.cache.js';
-import type { BulkTelemetryItem, TelemetryThresholds } from './telemetry.validation.js';
+import type { BulkTelemetryItem } from './telemetry.validation.js';
 import { AppError, ErrorCodes } from '../../shared/http/errors.js';
 import { pushStellarAnchorJob, pushAlertJob } from '../../infra/redis/queue.js';
 import logger from '../../shared/logger/logger.js';
@@ -179,14 +179,6 @@ export async function getTelemetryService(params: {
 
   const telemetry = await telemetryQuery.lean();
   return paginateCursor(telemetry, limit);
-}
-
-/**
- * Returns the hardcoded sensor alert thresholds.
- * @returns {TelemetryThresholds} Threshold constants for temperature, humidity, and battery level.
- */
-export function getTelemetryThresholds(): TelemetryThresholds {
-  return { maxTemp: 85, maxHumidity: 90, minBatteryLevel: 20 };
 }
 
 /**

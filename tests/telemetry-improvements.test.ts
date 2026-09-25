@@ -25,18 +25,6 @@ describe('TelemetrySchema index definitions', () => {
   });
 });
 
-/**
- * Unit tests for getTelemetryThresholds service function.
- * Validates Requirement 2.3.
- */
-describe('getTelemetryThresholds', () => {
-  it('returns the hardcoded threshold object { maxTemp: 85, maxHumidity: 90, minBatteryLevel: 20 }', async () => {
-    const { getTelemetryThresholds } = await import('../src/modules/telemetry/telemetry.service.js');
-    const result = getTelemetryThresholds();
-    expect(result).toEqual({ maxTemp: 85, maxHumidity: 90, minBatteryLevel: 20 });
-  });
-});
-
 import { DEFAULT_SHIPMENT_TYPE, DEFAULT_TELEMETRY_THRESHOLDS } from '../src/modules/telemetry/telemetryThreshold.constants.js';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
