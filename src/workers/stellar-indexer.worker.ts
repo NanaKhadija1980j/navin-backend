@@ -6,6 +6,7 @@ import { connectMongo } from '../infra/mongo/connection.js';
 import { config } from '../config/index.js';
 import { getBullMQConnection } from '../infra/redis/connection.js';
 import { PaymentModel } from '../modules/payments/payments.model.js';
+import { Telemetry } from '../modules/telemetry/telemetry.model.js';
 import { LedgerBlock } from '../modules/ledger/ledger.model.js';
 import { MilestoneEvent } from '../shared/types/shipment.js';
 import { logger } from '../shared/logger/logger.js';
@@ -62,6 +63,7 @@ const DEFAULT_CONFIRMATIONS = 3;
 function toMilestoneEvent(memo?: string): MilestoneEvent {
   const text = (memo ?? '').toUpperCase();
 
+  if (text.includes('TELEMETRY')) return MilestoneEvent.IN_TRANSIT;
   if (text.includes('SETTLEMENT_INITIATED')) return MilestoneEvent.SETTLEMENT_INITIATED;
   if (text.includes('PROOF_SUBMITTED')) return MilestoneEvent.PROOF_SUBMITTED;
   if (text.includes('DELIVERED')) return MilestoneEvent.DELIVERED;
@@ -73,6 +75,10 @@ export async function indexStellarTransactions(
   minConfirmations: number = DEFAULT_CONFIRMATIONS
 ): Promise<{ processed: number; upserted: number; verified: number }> {
   const payments = await PaymentModel.find({ stellarTxHash: { $exists: true, $ne: null } })
+    .select('_id shipmentId stellarTxHash')
+    .lean();
+
+  const telemetryRecords = await Telemetry.find({ stellarTxHash: { $exists: true, $ne: null } })
     .select('_id shipmentId stellarTxHash')
     .lean();
 
@@ -103,6 +109,15 @@ export async function indexStellarTransactions(
       verified += 1;
     }
 
+    const metadata = {
+      blockNumber: tx.ledger,
+      ledger: tx.ledger,
+      confirmations,
+      verified: isVerified,
+      memo: tx.memo,
+      indexedAt: new Date().toISOString(),
+    };
+
     const result = await LedgerBlock.updateOne(
       { transactionHash: tx.hash },
       {
@@ -112,16 +127,74 @@ export async function indexStellarTransactions(
           transactionHash: tx.hash,
           actor: 'stellar-indexer',
         },
+        $set: { metadata },
+      },
+      { upsert: true }
+    );
+
+    if ((result as { upsertedCount?: number }).upsertedCount) {
+      upserted += 1;
+    }
+  }
+
+  for (const record of telemetryRecords) {
+    const txHash = String((record as { stellarTxHash?: string }).stellarTxHash ?? '').trim();
+    if (!txHash || seen.has(txHash)) {
+      continue;
+    }
+    seen.add(txHash);
+
+    const tx = await client.getTransaction(txHash);
+    if (!tx) {
+      continue;
+    }
+
+    processed += 1;
+    const confirmations = Math.max(0, latestLedger - tx.ledger);
+    const isVerified = confirmations >= minConfirmations;
+
+    if (isVerified) {
+      verified += 1;
+    }
+
+    const metadata = {
+      blockNumber: tx.ledger,
+      ledger: tx.ledger,
+      confirmations,
+      verified: isVerified,
+      memo: tx.memo,
+      indexedAt: new Date().toISOString(),
+    };
+
+    await Telemetry.updateOne(
+      { _id: (record as { _id: unknown })._id },
+      {
         $set: {
-          metadata: {
-            blockNumber: tx.ledger,
-            ledger: tx.ledger,
-            confirmations,
-            verified: isVerified,
-            memo: tx.memo,
-            indexedAt: new Date().toISOString(),
-          },
+          verified: isVerified,
+          confirmationMetadata: metadata,
+          metadata,
         },
+      }
+    );
+
+    const eventType =
+      tx.memo &&
+      (tx.memo.toUpperCase().includes('SETTLEMENT') ||
+        tx.memo.toUpperCase().includes('PROOF') ||
+        tx.memo.toUpperCase().includes('DELIVERED'))
+        ? toMilestoneEvent(tx.memo)
+        : MilestoneEvent.IN_TRANSIT;
+
+    const result = await LedgerBlock.updateOne(
+      { transactionHash: tx.hash },
+      {
+        $setOnInsert: {
+          shipmentId: String((record as { shipmentId: unknown }).shipmentId),
+          eventType,
+          transactionHash: tx.hash,
+          actor: 'stellar-indexer',
+        },
+        $set: { metadata },
       },
       { upsert: true }
     );
