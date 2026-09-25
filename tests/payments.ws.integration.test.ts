@@ -1,13 +1,14 @@
 import { jest, describe, expect, beforeAll, afterAll, it } from '@jest/globals';
 import { io, Socket } from 'socket.io-client';
 import { createServer, Server } from 'http';
-import jwt from 'jsonwebtoken';
+import { signToken } from './fixtures/factories.js';
 import { randomUUID } from 'crypto';
+import { joinShipmentRoom, listenOnEphemeralPort } from './helpers/flush.js';
 
 describe('payment_status_changed socket event', () => {
   let httpServer: Server;
   let socketClient: Socket;
-  const TEST_PORT = 3998;
+  let testPort: number;
   const SHIPMENT_ID = '671000000000000000000099';
 
   beforeAll(async () => {
@@ -28,21 +29,11 @@ describe('payment_status_changed socket event', () => {
     const { initSocketIO } = await import('../src/infra/socket/io.js');
     initSocketIO(httpServer);
 
-    await new Promise<void>(resolve => {
-      httpServer.listen(TEST_PORT, () => resolve());
-    });
+    testPort = await listenOnEphemeralPort(httpServer);
 
-    const token = jwt.sign(
-      {
-        userId: 'user-1',
-        role: 'ADMIN',
-        organizationId: 'org456',
-        jti: randomUUID(),
-      },
-      process.env.JWT_SECRET!
-    );
+    const token = signToken({ userId: 'user-1', role: 'ADMIN', organizationId: 'org456', jti: randomUUID() });
 
-    socketClient = io(`http://localhost:${TEST_PORT}`, {
+    socketClient = io(`http://localhost:${testPort}`, {
       transports: ['websocket'],
       forceNew: true,
       reconnection: false,
@@ -64,8 +55,7 @@ describe('payment_status_changed socket event', () => {
   });
 
   it('delivers payment_status_changed to joined shipment room clients', async () => {
-    socketClient.emit('join_shipment', SHIPMENT_ID);
-    await new Promise(resolve => setTimeout(resolve, 150));
+    await joinShipmentRoom(socketClient, SHIPMENT_ID);
 
     const eventPromise = new Promise<Record<string, unknown>>(resolve => {
       socketClient.on('payment_status_changed', payload => resolve(payload));

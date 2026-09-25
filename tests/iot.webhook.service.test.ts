@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
+import { flushUntilIdle } from './helpers/flush.js';
 
 describe('processIotWebhook', () => {
   const payload = {
@@ -58,7 +59,7 @@ describe('processIotWebhook', () => {
     const { processIotWebhook } = await import('../src/modules/webhooks/iot.service.js');
 
     const result = await processIotWebhook(payload as any);
-    await new Promise(resolve => setImmediate(resolve));
+    await flushUntilIdle();
 
     expect(result).toBeDefined();
     expect(createTelemetryRecord).toHaveBeenCalledTimes(1);
@@ -122,7 +123,7 @@ describe('processIotWebhook', () => {
     const { processIotWebhook } = await import('../src/modules/webhooks/iot.service.js');
 
     await processIotWebhook(payload as any);
-    await new Promise(resolve => setImmediate(resolve));
+    await flushUntilIdle();
 
     expect(emitAnomalyDetected).toHaveBeenCalledTimes(1);
     expect(pushAlertJob).toHaveBeenCalledTimes(1);

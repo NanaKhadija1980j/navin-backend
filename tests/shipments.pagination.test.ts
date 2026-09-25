@@ -1,5 +1,5 @@
 import request from 'supertest';
-import jwt from 'jsonwebtoken';
+import { signToken } from './fixtures/factories.js';
 import { buildApp } from '../src/app.js';
 import { connectMongo } from '../src/infra/mongo/connection.js';
 import { Shipment } from '../src/modules/shipments/shipments.model.js';
@@ -9,7 +9,7 @@ let authToken: string;
 
 beforeAll(async () => {
   await connectMongo(process.env.MONGO_URI!);
-  authToken = jwt.sign({ userId: 'test-user-id', role: 'MANAGER' }, process.env.JWT_SECRET!);
+  authToken = signToken({ userId: 'test-user-id', role: 'MANAGER' });
 });
 
 afterEach(async () => {

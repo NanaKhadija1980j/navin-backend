@@ -41,6 +41,8 @@ await jest.unstable_mockModule('../src/modules/ledger/ledger.service.js', () => 
 
 const { uploadShipmentProofService, deleteShipmentService } = await import('../src/modules/shipments/shipments.service.js');
 
+const { multerFile } = await import('./fixtures/factories.js');
+
 describe('Shipments Service', () => {
   beforeAll(() => {
     findByIdAndUpdateMock.mockReset();
@@ -61,17 +63,7 @@ describe('Shipments Service', () => {
     };
     findByIdAndUpdateMock.mockResolvedValue(proofResponse);
 
-    const result = await uploadShipmentProofService('shipment-1', {
-      originalname: 'proof.jpg',
-      buffer: Buffer.from('fake'),
-      mimetype: 'image/jpeg',
-      size: 123,
-      fieldname: 'file',
-      destination: '',
-      filename: 'proof.jpg',
-      path: '',
-      stream: null as unknown as NodeJS.ReadableStream,
-    } as Express.Multer.File, {
+    const result = await uploadShipmentProofService('shipment-1', multerFile(), {
       recipientSignatureName: 'Jane Doe',
       notes: 'Left at front desk',
     });
@@ -95,17 +87,7 @@ describe('Shipments Service', () => {
     uploadFileToStorageMock.mockRejectedValue(new Error('timeout'));
 
     await expect(
-      uploadShipmentProofService('shipment-2', {
-        originalname: 'proof.jpg',
-        buffer: Buffer.from('fake'),
-        mimetype: 'image/jpeg',
-        size: 123,
-        fieldname: 'file',
-        destination: '',
-        filename: 'proof.jpg',
-        path: '',
-        stream: null as unknown as NodeJS.ReadableStream,
-      } as Express.Multer.File, {
+      uploadShipmentProofService('shipment-2', multerFile(), {
         recipientSignatureName: 'Jane Roe',
       })
     ).rejects.toEqual(expect.objectContaining({ statusCode: 503, message: 'Storage bucket unavailable, please try again later.' }));

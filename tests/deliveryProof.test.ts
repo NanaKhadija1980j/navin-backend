@@ -2,7 +2,7 @@ import { jest, describe, beforeAll, beforeEach, it, expect } from '@jest/globals
 import request from 'supertest';
 import { fileURLToPath } from 'node:url';
 import type { Application } from 'express';
-import jwt from 'jsonwebtoken';
+import { signToken } from './fixtures/factories.js';
 
 type PrimitiveId = string | number;
 type ShipmentRecord = {
@@ -69,10 +69,7 @@ describe('POST /api/shipments/:id/proof', () => {
   beforeAll(async () => {
     const appModule = await import('../src/app.js');
     app = appModule.buildApp();
-    authToken = jwt.sign(
-      { userId: 'user-1', role: 'MANAGER', organizationId: 'org-1' },
-      process.env.JWT_SECRET || 'secret'
-    );
+    authToken = signToken({ userId: 'user-1', role: 'MANAGER', organizationId: 'org-1' });
   });
 
   beforeEach(() => {
@@ -174,10 +171,7 @@ describe('POST /api/shipments/:id/proof', () => {
       status: 'CREATED',
     });
 
-    const viewerToken = jwt.sign(
-      { userId: 'user-viewer', role: 'VIEWER', organizationId: 'org-1' },
-      process.env.JWT_SECRET || 'secret'
-    );
+    const viewerToken = signToken({ userId: 'user-viewer', role: 'VIEWER', organizationId: 'org-1' });
 
     const res = await request(app)
       .post(`/api/shipments/${shipment._id}/proof`)

@@ -1,7 +1,7 @@
 import { jest, describe, beforeAll, beforeEach, it, expect } from '@jest/globals';
 import request from 'supertest';
 import type { Application } from 'express';
-import jwt from 'jsonwebtoken';
+import { signToken } from './fixtures/factories.js';
 
 type ShipmentRecord = { _id: string; status?: string; milestones: unknown[] } & Record<
   string,
@@ -156,7 +156,7 @@ describe('API Schema Snapshot Tests', () => {
       walletAddress: '0xABC',
     });
 
-    authToken = jwt.sign({ userId: String(user._id), role: user.role }, process.env.JWT_SECRET!);
+    authToken = signToken({ userId: String(user._id), role: user.role });
   });
 
   beforeEach(() => {

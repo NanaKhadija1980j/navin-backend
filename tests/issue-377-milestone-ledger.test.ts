@@ -82,6 +82,8 @@ const { updateShipmentStatusService, uploadShipmentProofService } = await import
   '../src/modules/shipments/shipments.service.js'
 );
 
+const { multerFile } = await import('./fixtures/factories.js');
+
 describe('Ledger block creation on lifecycle events', () => {
   beforeEach(() => {
     createLedgerBlockMock.mockReset();
@@ -134,17 +136,7 @@ describe('Ledger block creation on lifecycle events', () => {
   });
 
   it('proof upload creates a PROOF_SUBMITTED ledger block', async () => {
-    const mockFile = {
-      originalname: 'proof.jpg',
-      buffer: Buffer.from('fake'),
-      mimetype: 'image/jpeg',
-      size: 123,
-      fieldname: 'file',
-      destination: '',
-      filename: 'proof.jpg',
-      path: '',
-      stream: null as unknown as NodeJS.ReadableStream,
-    } as Express.Multer.File;
+    const mockFile = multerFile();
 
     findByIdMock.mockResolvedValue({
       _id: 'ship-1',

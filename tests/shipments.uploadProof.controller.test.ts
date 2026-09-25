@@ -49,6 +49,8 @@ const { uploadShipmentProof } = await import(
   '../src/modules/shipments/shipments.controller.js'
 );
 
+const { multerFile } = await import('./fixtures/factories.js');
+
 describe('Shipments Controller › uploadShipmentProof (Issue #200)', () => {
   let req: Partial<Request>;
   let res: Partial<Response>;
@@ -68,14 +70,7 @@ describe('Shipments Controller › uploadShipmentProof (Issue #200)', () => {
 
   it('calls sendResponse exactly once on successful upload', async () => {
     req.body = { recipientSignatureName: 'John Doe', notes: 'Left at door' };
-    req.file = {
-      fieldname: 'file',
-      originalname: 'proof.jpg',
-      encoding: '7bit',
-      mimetype: 'image/jpeg',
-      size: 1024,
-      buffer: Buffer.from('fake-image-data'),
-    } as Express.Multer.File;
+    req.file = multerFile({ size: 1024, buffer: Buffer.from('fake-image-data') });
 
     const mockUpdatedShipment = {
       _id: 'shipment123',
@@ -115,14 +110,7 @@ describe('Shipments Controller › uploadShipmentProof (Issue #200)', () => {
   });
 
   it('propagates service errors without calling sendResponse', async () => {
-    req.file = {
-      fieldname: 'file',
-      originalname: 'proof.jpg',
-      encoding: '7bit',
-      mimetype: 'image/jpeg',
-      size: 1024,
-      buffer: Buffer.from('fake-image-data'),
-    } as Express.Multer.File;
+    req.file = multerFile({ size: 1024, buffer: Buffer.from('fake-image-data') });
 
     const serviceError = new Error('Storage unavailable');
     mockUploadShipmentProofService.mockRejectedValueOnce(serviceError);
@@ -137,14 +125,7 @@ describe('Shipments Controller › uploadShipmentProof (Issue #200)', () => {
 
   it('passes undefined recipientSignatureName and notes when body is empty', async () => {
     req.body = {};
-    req.file = {
-      fieldname: 'file',
-      originalname: 'proof.jpg',
-      encoding: '7bit',
-      mimetype: 'image/jpeg',
-      size: 1024,
-      buffer: Buffer.from('fake-image-data'),
-    } as Express.Multer.File;
+    req.file = multerFile({ size: 1024, buffer: Buffer.from('fake-image-data') });
 
     mockUploadShipmentProofService.mockResolvedValueOnce({ _id: 'shipment123' });
 
